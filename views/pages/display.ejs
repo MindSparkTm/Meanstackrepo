@@ -1,0 +1,48 @@
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+</head>
+<p>Display all images from folder</p>
+
+
+
+
+<script type="text/javascript">
+    var dir = "C:/Users/surajit.das/Desktop/New folder/MEANStackApp/Meanstackrepo/public/Images/";
+    var fileextension = ['.jpg','.jpeg','.png'];
+    $.ajax({
+        //This will retrieve the contents of the folder if the folder is configured as 'browsable'
+        url: dir,
+        success: function (data) {
+            //Lsit all png file names in the page
+            for(var i =0;i<fileextension.length;i++){
+                $(data).find("a:contains(" + fileextension + ")").each(function () {
+                    var filename = this.href.replace(window.location.host, "").replace("http://localhost:3000/Images/", "");
+                    $("body").append($("<img src=" + dir + filename + "></img>"));
+                });
+            }
+
+        }
+    });
+
+
+
+    var folder = "images/";
+
+    $.ajax({
+        url : folder,
+        success: function (data) {
+            $(data).find("a").attr("href", function (i, val) {
+                if( val.match(/\.(jpe?g|png|gif)$/) ) {
+                    $("body").append( "<img src='"+ folder + val +"'>" );
+                }
+            });
+        }
+    });
+</script>
+
+
+
+<body></body>
+</html>

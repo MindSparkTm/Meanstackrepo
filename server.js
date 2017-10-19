@@ -2,6 +2,7 @@ var express = require("express");
 var multer = require('multer')
 var app = express()
 var path = require('path')
+app.use(express.static('public'))
 
 var ejs = require('ejs')
 app.set('view engine', 'ejs')
@@ -14,7 +15,6 @@ MongoClient.connect(url, (err, database) => {
     database.createCollection("imageinfo", function(err, res) {
         if (err) throw err;
         console.log("Collection created!");
-        database.close();
     });
     db = database;
 });
@@ -35,24 +35,35 @@ var storage = multer.diskStorage({
 })
 
 app.post('/api/file', function(req, res) {
+    var filename ="";
     var upload = multer({
         storage: storage,
         fileFilter: function(req, file, callback) {
-            var ext = path.extname(file.originalname)
+            var ext = path.extname(file.originalname);
+            filename = file.originalname;
             console.log(file.originalname);
             if (ext !== '.png' && ext !== '.jpg' && ext !== '.gif' && ext !== '.jpeg') {
                 return callback(res.end('Only images are allowed'), null)
             }
             callback(null, true)
-            insertDocument(db, file.originalname, function () {
-                db.close();
-            });
+
         }
     }).single('userFile');
+
     upload(req, res, function(err) {
-        res.end('File is uploaded')
+         var result ="";
+        result = res.finished;
+        res.end('File is uploaded');
 
-
+if(result=== false){
+    console.log("Good Job ",filename);
+    insertDocument(db,filename,function(req,res){
+        console.log("response",res);
+    })
+}
+else{
+    console.log("fjjj");
+}
     });
 
 
@@ -61,32 +72,50 @@ app.post('/api/file', function(req, res) {
 
 app.get("/fetchrecords",function(req,res){
     console.log("entered");
-
-    findImages(db, function() {
-        db.close();
+    findImages(db,function(res){
+     console.log("res",res.length);
     });
 
-});
-var insertDocument = function(db,filename, callback) {
-    db.collection('imageinfo').insertOne( {
-         myobj:{"imagename":filename}
+    res.render('pages/display.ejs');
 
-}, function(err, result) {
-        console.log("Inserted a document into the image collection.");
+});
+
+
+
+var insertDocument = function(db,filename, callback) {
+    var myobj = {"imagename":filename};
+    db.collection('imageinfo').insertOne(myobj, function(err, result) {
+        if(err===null){
+            callback("result",result);
+        }
+        else{
+            callback("error",err);
+        }
 
 
     });
 };
 
 var findImages = function(db, callback) {
-    var cursor =db.collection('imageinfo').find( );
-    cursor.each(function(err, doc) {
-        if (doc != null) {
-            console.dir("doc",doc);
-        } else {
-            callback();
-        }
+    var s =[];
+    db.collection('imageinfo', function(err, collection) {
+        collection.find().toArray(function(err, items) {
+
+            for(var i=0;i<items.length;i++){
+                console.log("imagename",items[i].imagename);
+                s.push(items[i].imagename);
+
+            }
+
+            if(i==items.length){
+             callback(s);
+            }
+        });
+
+
     });
+
+
 
 };
 
